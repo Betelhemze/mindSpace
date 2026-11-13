@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  SafeAreaView,
   Modal,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import { getRepositories } from '@/database';
 import { AuthService } from '@/services/authService';
@@ -232,7 +232,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>

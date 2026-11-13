@@ -8,23 +8,46 @@ import {
 } from './encryption';
 import { runMigrations } from './migrations';
 
-let dbInstance: SQLiteDatabase | null = null;
-let encryptionStatus: EncryptionStatus | null = null;
-let initPromise: Promise<SQLiteDatabase> | null = null;
+const globalScope = globalThis as unknown as {
+  __mindspace_db_instance__?: SQLiteDatabase | null;
+  __mindspace_encryption_status__?: EncryptionStatus | null;
+  __mindspace_init_promise__?: Promise<SQLiteDatabase> | null;
+};
+
+async function openDatabaseWithRetry(name: string, maxRetries = 3): Promise<SQLiteDatabase> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await openDatabaseAsync(name);
+    } catch (err: any) {
+      const isLockError =
+        err?.message?.includes('createSyncAccessHandle') ||
+        err?.message?.includes('Access Handle') ||
+        err?.message?.includes('lock');
+
+      if (attempt < maxRetries && isLockError && Platform.OS === 'web') {
+        console.warn(`[Mindspace DB] Database locked by previous handle, retrying in ${(attempt + 1) * 300}ms...`);
+        await new Promise((res) => setTimeout(res, (attempt + 1) * 300));
+        continue;
+      }
+      throw err;
+    }
+  }
+  return openDatabaseAsync(name);
+}
 
 export async function getDatabase(): Promise<SQLiteDatabase> {
-  if (dbInstance) {
-    return dbInstance;
+  if (globalScope.__mindspace_db_instance__) {
+    return globalScope.__mindspace_db_instance__;
   }
 
-  // Prevent multiple concurrent initialization calls
-  if (initPromise) {
-    return initPromise;
+  // Prevent multiple concurrent initialization calls across fast refresh
+  if (globalScope.__mindspace_init_promise__) {
+    return globalScope.__mindspace_init_promise__;
   }
 
-  initPromise = (async () => {
+  globalScope.__mindspace_init_promise__ = (async () => {
     try {
-      const db = await openDatabaseAsync(DB_NAME);
+      const db = await openDatabaseWithRetry(DB_NAME);
 
       // 1. Retrieve or generate the encryption key from hardware-backed SecureStore
       let key: string | null = null;
@@ -36,7 +59,7 @@ export async function getDatabase(): Promise<SQLiteDatabase> {
       }
 
       // 2. Apply encryption PRAGMA and verify SQLCipher
-      encryptionStatus = await applyDatabaseEncryption(db, key);
+      globalScope.__mindspace_encryption_status__ = await applyDatabaseEncryption(db, key);
 
       // 3. Set performance and crash-safety pragmas
       // wa-sqlite (web) has limited PRAGMA support — skip WAL on web
@@ -65,35 +88,35 @@ export async function getDatabase(): Promise<SQLiteDatabase> {
       // 5. Execute schema migrations
       await runMigrations(db);
 
-      dbInstance = db;
-      return dbInstance;
+      globalScope.__mindspace_db_instance__ = db;
+      return db;
     } catch (error) {
       console.error('[Mindspace DB] Initialization failed:', error);
       // Clean up instance so future attempts can retry cleanly
-      dbInstance = null;
+      globalScope.__mindspace_db_instance__ = null;
       throw error;
     } finally {
-      initPromise = null;
+      globalScope.__mindspace_init_promise__ = null;
     }
   })();
 
-  return initPromise;
+  return globalScope.__mindspace_init_promise__;
 }
 
 export function getCachedEncryptionStatus(): EncryptionStatus | null {
-  return encryptionStatus;
+  return globalScope.__mindspace_encryption_status__ ?? null;
 }
 
 export async function closeDatabase(): Promise<void> {
-  if (dbInstance) {
+  if (globalScope.__mindspace_db_instance__) {
     try {
-      await dbInstance.closeAsync();
+      await globalScope.__mindspace_db_instance__.closeAsync();
     } catch (err) {
       console.warn('[Mindspace DB] Error closing database:', err);
     } finally {
-      dbInstance = null;
-      encryptionStatus = null;
-      initPromise = null;
+      globalScope.__mindspace_db_instance__ = null;
+      globalScope.__mindspace_encryption_status__ = null;
+      globalScope.__mindspace_init_promise__ = null;
     }
   }
 }

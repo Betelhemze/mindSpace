@@ -30,6 +30,12 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9cc266b4-4596-4826-b2a0-e51d07596aa8"
+    },
     "plugins": [
       "expo-router",
       [
@@ -41,7 +47,8 @@
       ],
       "expo-secure-store",
       "expo-local-authentication",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-updates"
     ],
     "extra": {
       "router": {

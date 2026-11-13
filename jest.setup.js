@@ -51,3 +51,24 @@ jest.mock('expo-sharing', () => ({
   isAvailableAsync: jest.fn().mockResolvedValue(true),
   shareAsync: jest.fn().mockResolvedValue(undefined),
 }));
+
+jest.mock('react-native-safe-area-context', () => {
+  const React = require('react');
+  return {
+    SafeAreaProvider: ({ children }) => children,
+    SafeAreaView: ({ children, ...props }) => React.createElement('View', props, children),
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  };
+});
+
+jest.mock('expo-updates', () => ({
+  checkForUpdateAsync: jest.fn().mockResolvedValue({ isAvailable: false }),
+  fetchUpdateAsync: jest.fn().mockResolvedValue({}),
+  reloadAsync: jest.fn().mockResolvedValue(undefined),
+  useUpdates: jest.fn().mockReturnValue({
+    currentlyRunning: { isEmbeddedLaunch: true },
+    isUpdateAvailable: false,
+    isUpdatePending: false,
+    availableUpdate: null,
+  }),
+}));

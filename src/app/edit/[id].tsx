@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StyleSheet, ActivityIndicator, View, Text, Alert } from 'react-native';
+import { StyleSheet, ActivityIndicator, View, Text, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { theme } from '@/constants/theme';
 import { WritingEditor } from '@/components/WritingEditor';
@@ -73,7 +74,7 @@ export default function EditScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       <WritingEditor
         content={content}
         status="saved"
