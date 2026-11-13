@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Mindspace — Personal Thought Journal",
+  "version": "1.0.0",
+  "description": "Private, offline personal thought journal with fast capture, categories, and browser side panel.",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "contextMenus"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Mindspace Journal"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}
+
