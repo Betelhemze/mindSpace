@@ -13,7 +13,7 @@ export class DraftRepository {
    */
   async getActiveDraft(): Promise<ThoughtDraft | null> {
     const row = await this.db.getFirstAsync<ThoughtDraft>(
-      `SELECT id, content, created_at, updated_at
+      `SELECT id, content, rich_content, created_at, updated_at
        FROM drafts
        ORDER BY updated_at DESC
        LIMIT 1;`
@@ -24,7 +24,11 @@ export class DraftRepository {
   /**
    * Upserts the draft. If content is empty, removes the draft to keep storage clean.
    */
-  async saveDraft(content: string, draftId: string = DEFAULT_DRAFT_ID): Promise<ThoughtDraft | null> {
+  async saveDraft(
+    content: string,
+    draftId: string = DEFAULT_DRAFT_ID,
+    richContent?: string | null
+  ): Promise<ThoughtDraft | null> {
     const sanitized = sanitizeThoughtContent(content);
     if (!sanitized) {
       await this.deleteDraft(draftId);
@@ -32,18 +36,22 @@ export class DraftRepository {
     }
 
     const now = getCurrentUtcIso();
+    const storedRich = richContent ?? null;
+
     await this.db.runAsync(
-      `INSERT INTO drafts (id, content, created_at, updated_at)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO drafts (id, content, rich_content, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          content = excluded.content,
+         rich_content = excluded.rich_content,
          updated_at = excluded.updated_at;`,
-      [draftId, content, now, now]
+      [draftId, content, storedRich, now, now]
     );
 
     return {
       id: draftId,
       content,
+      rich_content: storedRich,
       created_at: now,
       updated_at: now,
     };
@@ -63,4 +71,3 @@ export class DraftRepository {
     await this.db.runAsync(`DELETE FROM drafts;`);
   }
 }
-

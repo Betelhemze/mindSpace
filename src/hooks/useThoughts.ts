@@ -70,7 +70,11 @@ export function useThoughts() {
    * Save a thought with duplicate prevention and automatic draft clearing.
    */
   const addThought = useCallback(
-    async (content: string, category?: string | null): Promise<Thought | null> => {
+    async (
+      content: string,
+      category?: string | null,
+      richContent?: string | null
+    ): Promise<Thought | null> => {
       if (isSavingRef.current) {
         return null; // Prevent concurrent double-clicks
       }
@@ -87,7 +91,11 @@ export function useThoughts() {
         }
 
         // 2. Insert into database
-        const newThought = await repos.thoughts.create({ content, category });
+        const newThought = await repos.thoughts.create({
+          content,
+          category,
+          rich_content: richContent,
+        });
 
         // 3. Clear working draft in database
         await repos.drafts.deleteDraft();
@@ -119,18 +127,31 @@ export function useThoughts() {
   /**
    * Update an existing thought
    */
-  const updateThought = useCallback(async (id: string, content: string, category?: string | null): Promise<Thought> => {
-    const repos = await getRepositories();
-    const updated = await repos.thoughts.update({ id, content, category });
+  const updateThought = useCallback(
+    async (
+      id: string,
+      content: string,
+      category?: string | null,
+      richContent?: string | null
+    ): Promise<Thought> => {
+      const repos = await getRepositories();
+      const updated = await repos.thoughts.update({
+        id,
+        content,
+        category,
+        rich_content: richContent,
+      });
 
-    setThoughts((prev) => {
-      const newList = prev.map((item) => (item.id === id ? updated : item));
-      setGroupedThoughts(groupThoughtsByDate(newList));
-      return newList;
-    });
+      setThoughts((prev) => {
+        const newList = prev.map((item) => (item.id === id ? updated : item));
+        setGroupedThoughts(groupThoughtsByDate(newList));
+        return newList;
+      });
 
-    return updated;
-  }, []);
+      return updated;
+    },
+    []
+  );
 
   /**
    * Delete a thought (soft-delete for safety)
@@ -171,4 +192,3 @@ export function useThoughts() {
     deleteThought,
   };
 }
-

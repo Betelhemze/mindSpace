@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { Icon } from './Icon';
 
 interface EmptyStateProps {
@@ -16,15 +16,29 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionLabel,
   onAction,
 }) => {
+  const { theme } = useTheme();
+
   return (
     <View style={styles.container}>
-      <View style={styles.iconCircle}>
+      <View
+        style={[
+          styles.iconCircle,
+          {
+            backgroundColor: theme.colors.surfaceSubtle,
+            borderColor: theme.colors.borderLight,
+          },
+        ]}
+      >
         <Icon name="edit-3" size={26} color={theme.colors.accentLight} />
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+      <Text style={[styles.description, { color: theme.colors.textSecondary }]}>{description}</Text>
       {actionLabel && onAction && (
-        <TouchableOpacity style={styles.actionButton} onPress={onAction} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: theme.colors.accent }]}
+          onPress={onAction}
+          activeOpacity={0.8}
+        >
           <Text style={styles.actionButtonText}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
@@ -36,44 +50,39 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.xxl,
-    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
   iconCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: theme.colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   title: {
-    fontSize: theme.typography.sizes.title,
+    fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
     textAlign: 'center',
   },
   description: {
-    fontSize: theme.typography.sizes.body,
-    lineHeight: theme.typography.lineHeights.body,
-    color: theme.colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 24,
     textAlign: 'center',
     maxWidth: 320,
-    marginBottom: theme.spacing.xl,
+    marginBottom: 24,
   },
   actionButton: {
-    backgroundColor: theme.colors.accent,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radii.full,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
   },
   actionButtonText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body,
+    fontSize: 15,
     fontWeight: '600',
   },
 });

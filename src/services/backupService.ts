@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { getRepositories } from '@/database';
 import { getCurrentUtcIso } from '@/utils/dateUtils';
 import { MindspaceBackupFile, MindspaceBackupPayload, RestoreResult } from '@/types/backup';
-import { Thought } from '@/types/thought';
+import { deserializeDocument, documentToMarkdown } from '@/utils/richText';
 
 export class BackupService {
   /**
@@ -54,7 +54,6 @@ export class BackupService {
     const filename = `mindspace_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 
     if (Platform.OS === 'web') {
-      // In web browser, trigger download
       return jsonString;
     }
 
@@ -81,7 +80,7 @@ export class BackupService {
 
   /**
    * Exports the entire journal as a clean, human-readable Markdown file (.md).
-   * Great for archiving, printing, or importing into Obsidian/Notion.
+   * Formats headings, lists, bold, italics, etc. seamlessly.
    */
   static async exportAsMarkdown(): Promise<string> {
     const repos = await getRepositories();
@@ -101,9 +100,17 @@ export class BackupService {
         day: 'numeric',
       });
       const timeHeader = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      const categoryTag = t.category ? ` [${t.category}]` : '';
 
-      md += `### ${dateHeader} · ${timeHeader}\n\n`;
-      md += `${t.content}\n\n`;
+      md += `### ${dateHeader} · ${timeHeader}${categoryTag}\n\n`;
+
+      if (t.rich_content) {
+        const doc = deserializeDocument(t.rich_content);
+        md += `${documentToMarkdown(doc)}\n\n`;
+      } else {
+        md += `${t.content}\n\n`;
+      }
+
       md += `---\n\n`;
     }
 
@@ -174,7 +181,7 @@ export class BackupService {
 
   /**
    * Restores thoughts from a validated backup into the database transactionally.
-   * Duplicate IDs are preserved or updated safely without duplicate creation.
+   * Preserves rich text formatting and existing entries safely.
    */
   static async restoreBackup(backup: MindspaceBackupFile): Promise<RestoreResult> {
     const repos = await getRepositories();
@@ -190,17 +197,23 @@ export class BackupService {
 
       const existing = await repos.thoughts.getById(item.id);
       if (existing) {
-        // If content and timestamps match exactly, skip
-        if (existing.content === item.content && existing.updated_at === item.updated_at) {
+        // If content, rich content, and timestamps match exactly, skip
+        if (
+          existing.content === item.content &&
+          existing.rich_content === item.rich_content &&
+          existing.updated_at === item.updated_at
+        ) {
           skippedCount++;
           continue;
         }
       }
 
-      // Upsert thought safely
+      // Upsert thought safely with rich text and category
       await repos.thoughts.create({
         id: item.id,
         content: item.content,
+        rich_content: item.rich_content ?? null,
+        category: item.category ?? null,
         created_at: item.created_at,
       });
       importedCount++;

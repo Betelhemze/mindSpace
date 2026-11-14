@@ -7,7 +7,7 @@ import {
   Vibration,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { Icon } from './Icon';
 
 interface LockScreenProps {
@@ -21,6 +21,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
   onUnlockWithPin,
   isPinConfigured,
 }) => {
+  const { theme } = useTheme();
   const [pin, setPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
@@ -52,29 +53,48 @@ export const LockScreen: React.FC<LockScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={['top', 'left', 'right', 'bottom']}
+    >
       <View style={styles.header}>
-        <View style={styles.iconCircle}>
+        <View
+          style={[
+            styles.iconCircle,
+            {
+              backgroundColor: theme.colors.surfaceSubtle,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
           <Icon name="lock" size={30} color={theme.colors.accent} />
         </View>
-        <Text style={styles.title}>Mindspace is locked</Text>
-        <Text style={styles.subtitle}>Your personal thoughts are encrypted & private.</Text>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Mindspace is locked</Text>
+        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+          Your personal thoughts are encrypted & private.
+        </Text>
       </View>
 
       {/* Biometric trigger button */}
       <TouchableOpacity
-        style={styles.biometricButton}
+        style={[
+          styles.biometricButton,
+          {
+            backgroundColor: theme.colors.surfaceSubtle,
+            borderColor: theme.colors.border,
+          },
+        ]}
         onPress={onUnlockWithBiometrics}
         activeOpacity={0.8}
       >
         <Icon name="shield" size={20} color={theme.colors.accent} style={styles.biometricIcon} />
-        <Text style={styles.biometricButtonText}>Unlock with Biometrics</Text>
+        <Text style={[styles.biometricButtonText, { color: theme.colors.accent }]}>Unlock with Biometrics</Text>
       </TouchableOpacity>
 
       {/* PIN entry if PIN is configured */}
       {isPinConfigured && (
         <View style={styles.pinSection}>
-          <Text style={styles.pinLabel}>or enter your 4-digit PIN</Text>
+          <Text style={[styles.pinLabel, { color: theme.colors.textMuted }]}>or enter your 4-digit PIN</Text>
 
           {/* PIN dots */}
           <View style={styles.dotsRow}>
@@ -83,14 +103,18 @@ export const LockScreen: React.FC<LockScreenProps> = ({
               return (
                 <View
                   key={index}
-                  style={[styles.dot, isFilled && styles.dotFilled]}
+                  style={[
+                    styles.dot,
+                    { borderColor: theme.colors.textMuted },
+                    isFilled && [styles.dotFilled, { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }],
+                  ]}
                 />
               );
             })}
           </View>
 
           {errorMessage ? (
-            <Text style={styles.errorText}>{errorMessage}</Text>
+            <Text style={[styles.errorText, { color: theme.colors.statusError }]}>{errorMessage}</Text>
           ) : (
             <View style={{ height: 20 }} />
           )}
@@ -112,7 +136,13 @@ export const LockScreen: React.FC<LockScreenProps> = ({
                     return (
                       <TouchableOpacity
                         key={cIndex}
-                        style={styles.keyButton}
+                        style={[
+                          styles.keyButton,
+                          {
+                            backgroundColor: theme.colors.surfaceSubtle,
+                            borderColor: theme.colors.borderLight,
+                          },
+                        ]}
                         onPress={handleDelete}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
@@ -123,11 +153,17 @@ export const LockScreen: React.FC<LockScreenProps> = ({
                   return (
                     <TouchableOpacity
                       key={cIndex}
-                      style={styles.keyButton}
+                      style={[
+                        styles.keyButton,
+                        {
+                          backgroundColor: theme.colors.surfaceSubtle,
+                          borderColor: theme.colors.borderLight,
+                        },
+                      ]}
                       onPress={() => handleKeyPress(item)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.keyText}>{item}</Text>
+                      <Text style={[styles.keyText, { color: theme.colors.textPrimary }]}>{item}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -147,56 +183,48 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.colors.background,
     zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
+    paddingHorizontal: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: 24,
   },
   iconCircle: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: theme.colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   title: {
-    fontSize: theme.typography.sizes.title,
+    fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
+    fontSize: 13,
     textAlign: 'center',
   },
   biometricButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceSubtle,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radii.full,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: theme.spacing.xxl,
+    marginBottom: 32,
   },
   biometricIcon: {
-    marginRight: theme.spacing.sm,
+    marginRight: 8,
   },
   biometricButtonText: {
-    fontSize: theme.typography.sizes.body,
+    fontSize: 15,
     fontWeight: '600',
-    color: theme.colors.accent,
   },
   pinSection: {
     alignItems: 'center',
@@ -204,52 +232,46 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   pinLabel: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.md,
+    fontSize: 11,
+    marginBottom: 16,
   },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
   },
   dot: {
     width: 14,
     height: 14,
     borderRadius: 7,
     borderWidth: 1.5,
-    borderColor: theme.colors.textMuted,
-    marginHorizontal: theme.spacing.md,
+    marginHorizontal: 12,
   },
   dotFilled: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+    borderWidth: 1.5,
   },
   errorText: {
-    color: theme.colors.statusError,
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     height: 20,
     textAlign: 'center',
   },
   keypad: {
     width: '100%',
-    marginTop: theme.spacing.md,
+    marginTop: 16,
   },
   keypadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
   keyButton: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: theme.colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   keyButtonEmpty: {
     width: 64,
@@ -258,6 +280,5 @@ const styles = StyleSheet.create({
   keyText: {
     fontSize: 22,
     fontWeight: '600',
-    color: theme.colors.textPrimary,
   },
 });

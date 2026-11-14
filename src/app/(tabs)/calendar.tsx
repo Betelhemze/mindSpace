@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { getRepositories } from '@/database';
 import { Thought } from '@/types/thought';
 import { ThoughtCard } from '@/components/ThoughtCard';
@@ -23,6 +23,7 @@ import { Icon } from '@/components/Icon';
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarScreen() {
+  const { theme } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDateKey, setSelectedDateKey] = useState<string>(getLocalDateKey(new Date()));
   const [datesWithThoughts, setDatesWithThoughts] = useState<Set<string>>(new Set());
@@ -89,30 +90,39 @@ export default function CalendarScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Screen Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Calendar</Text>
-          <Text style={styles.headerSubtitle}>Explore your thoughts by day</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>Calendar</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>Explore your thoughts by day</Text>
         </View>
 
         {/* Month Navigation Card */}
-        <View style={styles.calendarCard}>
+        <View
+          style={[
+            styles.calendarCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              ...theme.shadows.card,
+            },
+          ]}
+        >
           <View style={styles.monthHeader}>
             <TouchableOpacity
               onPress={handlePrevMonth}
-              style={styles.navButton}
+              style={[styles.navButton, { backgroundColor: theme.colors.surfaceSubtle }]}
               accessibilityLabel="Previous month"
             >
               <Icon name="chevron-left" size={20} color={theme.colors.textPrimary} />
             </TouchableOpacity>
 
-            <Text style={styles.monthTitle}>{formatMonthYear(currentDate)}</Text>
+            <Text style={[styles.monthTitle, { color: theme.colors.textPrimary }]}>{formatMonthYear(currentDate)}</Text>
 
             <TouchableOpacity
               onPress={handleNextMonth}
-              style={styles.navButton}
+              style={[styles.navButton, { backgroundColor: theme.colors.surfaceSubtle }]}
               accessibilityLabel="Next month"
             >
               <Icon name="chevron-right" size={20} color={theme.colors.textPrimary} />
@@ -120,9 +130,9 @@ export default function CalendarScreen() {
           </View>
 
           {/* Days of week header */}
-          <View style={styles.weekRow}>
+          <View style={[styles.weekRow, { borderBottomColor: theme.colors.borderLight }]}>
             {DAYS_OF_WEEK.map((d) => (
-              <Text key={d} style={styles.weekDayText}>
+              <Text key={d} style={[styles.weekDayText, { color: theme.colors.textMuted }]}>
                 {d}
               </Text>
             ))}
@@ -143,15 +153,19 @@ export default function CalendarScreen() {
               return (
                 <TouchableOpacity
                   key={`day-${day}`}
-                  style={[styles.dayCell, isSelected && styles.selectedCell]}
+                  style={[
+                    styles.dayCell,
+                    isSelected && [styles.selectedCell, { backgroundColor: theme.colors.accent }],
+                  ]}
                   onPress={() => handleSelectDay(day)}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={[
                       styles.dayText,
+                      { color: theme.colors.textPrimary },
                       isSelected && styles.selectedDayText,
-                      isToday && !isSelected && styles.todayText,
+                      isToday && !isSelected && [styles.todayText, { color: theme.colors.statusDraft }],
                     ]}
                   >
                     {day}
@@ -160,7 +174,7 @@ export default function CalendarScreen() {
                     <View
                       style={[
                         styles.entryDot,
-                        isSelected && styles.selectedEntryDot,
+                        { backgroundColor: isSelected ? '#FFFFFF' : theme.colors.accent },
                       ]}
                     />
                   )}
@@ -171,11 +185,11 @@ export default function CalendarScreen() {
         </View>
 
         {/* Selected Date Entries Section */}
-        <View style={styles.selectedSectionHeader}>
-          <Text style={styles.selectedSectionTitle}>
+        <View style={[styles.selectedSectionHeader, { borderBottomColor: theme.colors.borderLight }]}>
+          <Text style={[styles.selectedSectionTitle, { color: theme.colors.textPrimary }]}>
             {formatFullLocalDate(new Date(`${selectedDateKey}T12:00:00`))}
           </Text>
-          <Text style={styles.selectedSectionCount}>
+          <Text style={[styles.selectedSectionCount, { color: theme.colors.textMuted }]}>
             {thoughtsForSelectedDate.length}{' '}
             {thoughtsForSelectedDate.length === 1 ? 'thought' : 'thoughts'}
           </Text>
@@ -211,62 +225,52 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   scrollContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
   header: {
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
   },
   headerTitle: {
-    fontSize: theme.typography.sizes.display,
+    fontSize: 32,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   headerSubtitle: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
+    fontSize: 13,
   },
   calendarCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.xl,
-    padding: theme.spacing.lg,
+    borderRadius: 22,
+    padding: 16,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.card,
+    marginBottom: 24,
   },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
   },
   monthTitle: {
-    fontSize: theme.typography.sizes.bodyLarge,
+    fontSize: 17,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   navButton: {
-    padding: theme.spacing.sm,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.surfaceSubtle,
+    padding: 8,
+    borderRadius: 9999,
   },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
     paddingBottom: 6,
   },
   weekDayText: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     fontWeight: '600',
-    color: theme.colors.textMuted,
     width: 38,
     textAlign: 'center',
   },
@@ -281,14 +285,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 2,
-    borderRadius: theme.radii.md,
+    borderRadius: 10,
   },
   selectedCell: {
-    backgroundColor: theme.colors.accent,
+    borderRadius: 10,
   },
   dayText: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.textPrimary,
+    fontSize: 15,
     fontWeight: '500',
   },
   selectedDayText: {
@@ -296,35 +299,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   todayText: {
-    color: theme.colors.statusDraft,
     fontWeight: '700',
   },
   entryDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: theme.colors.accent,
     marginTop: 2,
-  },
-  selectedEntryDot: {
-    backgroundColor: '#FFFFFF',
   },
   selectedSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
     paddingBottom: 4,
   },
   selectedSectionTitle: {
-    fontSize: theme.typography.sizes.bodyLarge,
+    fontSize: 17,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   selectedSectionCount: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textMuted,
+    fontSize: 11,
   },
 });

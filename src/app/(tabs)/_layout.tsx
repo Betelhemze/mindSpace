@@ -1,12 +1,13 @@
 import React from 'react';
 import { Tabs, router } from 'expo-router';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { Icon } from '@/components/Icon';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   return (
     <Tabs

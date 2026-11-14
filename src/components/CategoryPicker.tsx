@@ -1,13 +1,12 @@
 import React from 'react';
 import {
-  View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { CATEGORIES, Category } from '@/constants/categories';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { Icon } from './Icon';
 
 interface CategoryPickerProps {
@@ -26,6 +25,8 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   showAll = false,
   showNone = false,
 }) => {
+  const { theme } = useTheme();
+
   return (
     <ScrollView
       horizontal
@@ -103,19 +104,18 @@ const Pill: React.FC<PillProps> = ({ label, icon, color, bg, selected, onPress }
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    gap: theme.spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: theme.radii.full,
+    borderRadius: 9999,
   },
   pillSelected: {
-    // shadow to lift selected pills slightly
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
@@ -126,8 +126,7 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   pillLabel: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     fontWeight: '600',
   },
 });
-

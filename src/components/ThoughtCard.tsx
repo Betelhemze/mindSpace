@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Thought } from '@/types/thought';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { formatLocalTime, formatGroupDate } from '@/utils/dateUtils';
 import { getCategoryBySlug } from '@/constants/categories';
 import { Icon } from './Icon';
+import { RichTextViewer } from './RichTextViewer';
 
 interface ThoughtCardProps {
   thought: Thought;
@@ -19,12 +20,12 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
   onDelete,
   showDate = false,
 }) => {
+  const { theme, readingScale } = useTheme();
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
-  const isLong = thought.content.length > 280;
-  const displayContent =
-    isLong && !isExpanded ? `${thought.content.slice(0, 280)}...` : thought.content;
+  // Check if content is long enough to warrant an expand toggle (> 250 characters or multi-line)
+  const isLong = thought.content.length > 250;
 
   const category = getCategoryBySlug(thought.category);
 
@@ -52,12 +53,21 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          ...theme.shadows.card,
+        },
+      ]}
+    >
       {/* Header with timestamp and menu toggle */}
       <View style={styles.header}>
         <View style={styles.timeWrapper}>
           <Icon name="clock" size={12} color={theme.colors.textMuted} style={styles.timeIcon} />
-          <Text style={styles.timeText}>
+          <Text style={[styles.timeText, { color: theme.colors.textMuted }]}>
             {formatLocalTime(thought.created_at)}
             {showDate && ` · ${formatGroupDate(thought.created_at)}`}
           </Text>
@@ -83,15 +93,18 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
 
       {/* Quick contextual action menu */}
       {showMenu && (
-        <View style={styles.actionMenu}>
+        <View style={[styles.actionMenu, { backgroundColor: theme.colors.surfaceSubtle }]}>
           {onEdit && (
             <TouchableOpacity onPress={handleEdit} style={styles.menuItem}>
               <Icon name="edit-2" size={14} color={theme.colors.textSecondary} />
-              <Text style={styles.menuItemText}>Edit</Text>
+              <Text style={[styles.menuItemText, { color: theme.colors.textSecondary }]}>Edit</Text>
             </TouchableOpacity>
           )}
           {onDelete && (
-            <TouchableOpacity onPress={handleDelete} style={[styles.menuItem, styles.menuItemDelete]}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={[styles.menuItem, styles.menuItemDelete, { borderLeftColor: theme.colors.border }]}
+            >
               <Icon name="trash-2" size={14} color={theme.colors.statusError} />
               <Text style={[styles.menuItemText, { color: theme.colors.statusError }]}>Delete</Text>
             </TouchableOpacity>
@@ -99,8 +112,22 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
         </View>
       )}
 
-      {/* Content body */}
-      <Text style={styles.content}>{displayContent}</Text>
+      {/* Formatted Content Body */}
+      <View style={styles.contentContainer}>
+        {thought.rich_content ? (
+          <RichTextViewer
+            rawContent={thought.rich_content}
+            compact={isLong && !isExpanded}
+            fontSizeScale={readingScale}
+          />
+        ) : (
+          <RichTextViewer
+            rawContent={thought.content}
+            compact={isLong && !isExpanded}
+            fontSizeScale={readingScale}
+          />
+        )}
+      </View>
 
       {/* Read more toggle for lengthy reflections */}
       {isLong && (
@@ -109,7 +136,9 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
           style={styles.expandToggle}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.expandText}>{isExpanded ? 'Show less' : 'Read more'}</Text>
+          <Text style={[styles.expandText, { color: theme.colors.accentLight }]}>
+            {isExpanded ? 'Show less' : 'Read more'}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -118,19 +147,16 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadows.card,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 10,
   },
   timeWrapper: {
     flexDirection: 'row',
@@ -141,21 +167,20 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   timeText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textMuted,
+    fontSize: 11,
     fontWeight: '500',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: 8,
   },
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: theme.radii.full,
+    borderRadius: 9999,
   },
   badgeIcon: {
     marginRight: 3,
@@ -170,39 +195,33 @@ const styles = StyleSheet.create({
   actionMenu: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    backgroundColor: theme.colors.surfaceSubtle,
-    borderRadius: theme.radii.md,
-    padding: theme.spacing.xs,
-    marginBottom: theme.spacing.sm,
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   menuItemDelete: {
     borderLeftWidth: 1,
-    borderLeftColor: theme.colors.border,
   },
   menuItemText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textSecondary,
+    fontSize: 12,
     marginLeft: 6,
     fontWeight: '500',
   },
-  content: {
-    fontSize: theme.typography.sizes.body,
-    lineHeight: theme.typography.lineHeights.body,
-    color: theme.colors.textPrimary,
+  contentContainer: {
+    width: '100%',
   },
   expandToggle: {
-    marginTop: theme.spacing.sm,
+    marginTop: 8,
     alignSelf: 'flex-start',
   },
   expandText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.accentLight,
+    fontSize: 12,
     fontWeight: '600',
   },
 });

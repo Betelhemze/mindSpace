@@ -22,16 +22,18 @@ export class ThoughtRepository {
     const createdAt = dto.created_at || now;
     const updatedAt = now;
     const category = dto.category ?? null;
+    const richContent = dto.rich_content ?? null;
 
     await this.db.runAsync(
-      `INSERT INTO thoughts (id, content, category, created_at, updated_at, deleted_at)
-       VALUES (?, ?, ?, ?, ?, NULL);`,
-      [id, cleanContent, category, createdAt, updatedAt]
+      `INSERT INTO thoughts (id, content, rich_content, category, created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL);`,
+      [id, cleanContent, richContent, category, createdAt, updatedAt]
     );
 
     return {
       id,
       content: cleanContent,
+      rich_content: richContent,
       category,
       created_at: createdAt,
       updated_at: updatedAt,
@@ -62,7 +64,7 @@ export class ThoughtRepository {
     args.push(limit, offset);
 
     const rows = await this.db.getAllAsync<Thought>(
-      `SELECT id, content, category, created_at, updated_at, deleted_at
+      `SELECT id, content, rich_content, category, created_at, updated_at, deleted_at
        FROM thoughts
        WHERE ${conditions.join(' AND ')}
        ORDER BY created_at DESC
@@ -78,7 +80,7 @@ export class ThoughtRepository {
    */
   async getById(id: string): Promise<Thought | null> {
     const row = await this.db.getFirstAsync<Thought>(
-      `SELECT id, content, category, created_at, updated_at, deleted_at
+      `SELECT id, content, rich_content, category, created_at, updated_at, deleted_at
        FROM thoughts
        WHERE id = ?;`,
       [id]
@@ -87,7 +89,7 @@ export class ThoughtRepository {
   }
 
   /**
-   * Updates an existing thought's content and/or category.
+   * Updates an existing thought's content, rich_content, and/or category.
    */
   async update(dto: UpdateThoughtDTO): Promise<Thought> {
     const cleanContent = sanitizeThoughtContent(dto.content);
@@ -101,19 +103,22 @@ export class ThoughtRepository {
     }
 
     const now = getCurrentUtcIso();
-    // Only update category when it is explicitly provided in the DTO
-    const newCategory = 'category' in dto ? (dto.category ?? null) : existing.category;
+    const newCategory: string | null =
+      'category' in dto ? (dto.category ?? null) : (existing.category ?? null);
+    const newRichContent: string | null =
+      'rich_content' in dto ? (dto.rich_content ?? null) : (existing.rich_content ?? null);
 
     await this.db.runAsync(
       `UPDATE thoughts
-       SET content = ?, category = ?, updated_at = ?
+       SET content = ?, rich_content = ?, category = ?, updated_at = ?
        WHERE id = ?;`,
-      [cleanContent, newCategory, now, dto.id]
+      [cleanContent, newRichContent, newCategory, now, dto.id]
     );
 
     return {
       ...existing,
       content: cleanContent,
+      rich_content: newRichContent,
       category: newCategory,
       updated_at: now,
     };
@@ -177,7 +182,7 @@ export class ThoughtRepository {
    */
   async getByLocalDate(localDateStr: string): Promise<Thought[]> {
     const all = await this.db.getAllAsync<Thought>(
-      `SELECT id, content, category, created_at, updated_at, deleted_at
+      `SELECT id, content, rich_content, category, created_at, updated_at, deleted_at
        FROM thoughts
        WHERE deleted_at IS NULL
        ORDER BY created_at DESC;`

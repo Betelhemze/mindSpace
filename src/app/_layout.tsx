@@ -3,28 +3,71 @@ import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'rea
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '@/constants/theme';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { getDatabase } from '@/database';
 import { useSecurityLock } from '@/hooks/useSecurityLock';
 import { useOTAUpdates } from '@/hooks/useOTAUpdates';
 import { LockScreen } from '@/components/LockScreen';
+
+function AppContent() {
+  const { theme, resolvedColorMode } = useTheme();
+  const {
+    isLocked,
+    isPinConfigured,
+    unlockWithBiometrics,
+    unlockWithPin,
+  } = useSecurityLock();
+
+  // Check for OTA updates after DB is ready
+  useOTAUpdates();
+
+  return (
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <StatusBar style={resolvedColorMode === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.colors.background },
+          animation: 'fade',
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="write"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="edit/[id]"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+            animation: 'slide_from_bottom',
+          }}
+        />
+      </Stack>
+
+      {/* Security overlay if locked */}
+      {isLocked && (
+        <LockScreen
+          onUnlockWithBiometrics={unlockWithBiometrics}
+          onUnlockWithPin={unlockWithPin}
+          isPinConfigured={isPinConfigured}
+        />
+      )}
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [isDbReady, setIsDbReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
 
-  const {
-    isLocked,
-    isPinConfigured,
-    unlockWithBiometrics,
-    unlockWithPin,
-    isCheckingAuth,
-    refreshLockSettings,
-  } = useSecurityLock();
-
-  // Check for OTA updates after DB is ready
-  useOTAUpdates();
+  const { isCheckingAuth, refreshLockSettings } = useSecurityLock();
 
   const initDb = useCallback(async () => {
     setInitError(null);
@@ -84,7 +127,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right', 'bottom']}>
           <StatusBar style="dark" />
-          <ActivityIndicator size="large" color={theme.colors.accent} />
+          <ActivityIndicator size="large" color="#4A4036" />
         </SafeAreaView>
       </SafeAreaProvider>
     );
@@ -92,43 +135,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.root}>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: theme.colors.background },
-            animation: 'fade',
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="write"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <Stack.Screen
-            name="edit/[id]"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-              animation: 'slide_from_bottom',
-            }}
-          />
-        </Stack>
-
-        {/* Security overlay if locked */}
-        {isLocked && (
-          <LockScreen
-            onUnlockWithBiometrics={unlockWithBiometrics}
-            onUnlockWithPin={unlockWithPin}
-            isPinConfigured={isPinConfigured}
-          />
-        )}
-      </View>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
@@ -136,46 +145,45 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FBF9F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FBF9F5',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: 24,
   },
   errorTitle: {
-    fontSize: theme.typography.sizes.title,
+    fontSize: 20,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+    color: '#1F2022',
+    marginBottom: 8,
   },
   errorMessage: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.textSecondary,
+    fontSize: 15,
+    color: '#5C5D60',
     textAlign: 'center',
-    lineHeight: theme.typography.lineHeights.body,
-    marginBottom: theme.spacing.xl,
+    lineHeight: 24,
+    marginBottom: 24,
     maxWidth: 360,
   },
   retryButton: {
-    backgroundColor: theme.colors.accent,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radii.full,
+    backgroundColor: '#4A4036',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
     minWidth: 160,
     alignItems: 'center',
   },
   retryButtonText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body,
+    fontSize: 15,
     fontWeight: '600',
   },
 });

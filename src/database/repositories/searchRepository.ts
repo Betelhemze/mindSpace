@@ -45,7 +45,7 @@ export class SearchRepository {
         const ftsQuery = tokens.map((t) => `"${t}"*`).join(' ');
 
         const results = await this.db.getAllAsync<SearchResult>(
-          `SELECT t.id, t.content, t.created_at, t.updated_at, t.deleted_at
+          `SELECT t.id, t.content, t.rich_content, t.category, t.created_at, t.updated_at, t.deleted_at
            FROM thoughts_fts fts
            JOIN thoughts t ON t.id = fts.thought_id
            WHERE thoughts_fts MATCH ? AND t.deleted_at IS NULL
@@ -63,7 +63,7 @@ export class SearchRepository {
     // Fallback: Case-insensitive parameterized LIKE query
     const likeParam = `%${query}%`;
     const results = await this.db.getAllAsync<SearchResult>(
-      `SELECT id, content, created_at, updated_at, deleted_at
+      `SELECT id, content, rich_content, category, created_at, updated_at, deleted_at
        FROM thoughts
        WHERE deleted_at IS NULL AND content LIKE ?
        ORDER BY created_at DESC
@@ -74,4 +74,3 @@ export class SearchRepository {
     return results;
   }
 }
-

@@ -6,25 +6,28 @@ export type DraftStatus = 'saved' | 'saving' | 'unsaved' | 'empty';
 
 export function useDraft(initialDraftId: string = 'main_quick_draft') {
   const [content, setContent] = useState<string>('');
+  const [richContent, setRichContent] = useState<string | null>(null);
   const [status, setStatus] = useState<DraftStatus>('empty');
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   const contentRef = useRef<string>('');
+  const richContentRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<any>(null);
   const isSavingRef = useRef<boolean>(false);
 
   contentRef.current = content;
+  richContentRef.current = richContent;
 
   // Persist draft to SQLite database
   const persistDraft = useCallback(
-    async (textToSave: string) => {
+    async (textToSave: string, richToSave: string | null) => {
       if (isSavingRef.current) return;
       isSavingRef.current = true;
       setStatus('saving');
 
       try {
         const repos = await getRepositories();
-        await repos.drafts.saveDraft(textToSave, initialDraftId);
+        await repos.drafts.saveDraft(textToSave, initialDraftId, richToSave);
         setStatus(textToSave.trim() ? 'saved' : 'empty');
       } catch (err) {
         console.error('[useDraft] Error auto-saving draft:', err);
@@ -46,7 +49,9 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
         const existing = await repos.drafts.getActiveDraft();
         if (isMounted && existing && existing.content.trim()) {
           setContent(existing.content);
+          setRichContent(existing.rich_content ?? null);
           contentRef.current = existing.content;
+          richContentRef.current = existing.rich_content ?? null;
           setStatus('saved');
         } else if (isMounted) {
           setStatus('empty');
@@ -69,9 +74,13 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
 
   // Handle text changes with debounce
   const updateContent = useCallback(
-    (newText: string) => {
+    (newText: string, newRich?: string | null) => {
       setContent(newText);
       contentRef.current = newText;
+
+      const richValue = newRich !== undefined ? newRich : richContentRef.current;
+      setRichContent(richValue);
+      richContentRef.current = richValue;
 
       if (!newText.trim()) {
         setStatus('empty');
@@ -84,7 +93,7 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
       }
 
       debounceTimerRef.current = setTimeout(() => {
-        persistDraft(newText);
+        persistDraft(newText, richValue);
       }, 500);
     },
     [persistDraft]
@@ -97,7 +106,7 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
-        persistDraft(contentRef.current);
+        persistDraft(contentRef.current, richContentRef.current);
       }
     });
 
@@ -108,7 +117,7 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
       }
       // Save on hook unmount
       if (contentRef.current.trim()) {
-        persistDraft(contentRef.current);
+        persistDraft(contentRef.current, richContentRef.current);
       }
     };
   }, [persistDraft]);
@@ -119,7 +128,9 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
       clearTimeout(debounceTimerRef.current);
     }
     setContent('');
+    setRichContent(null);
     contentRef.current = '';
+    richContentRef.current = null;
     setStatus('empty');
     try {
       const repos = await getRepositories();
@@ -131,10 +142,11 @@ export function useDraft(initialDraftId: string = 'main_quick_draft') {
 
   return {
     content,
+    richContent,
     status,
     isLoaded,
     updateContent,
     clearDraft,
-    flushDraft: () => persistDraft(contentRef.current),
+    flushDraft: () => persistDraft(contentRef.current, richContentRef.current),
   };
 }

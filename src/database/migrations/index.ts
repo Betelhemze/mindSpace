@@ -3,6 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { CREATE_MIGRATIONS_TABLE_SQL } from '../schema';
 import { migration001 } from './001_initial_schema';
 import { migration002 } from './002_add_category';
+import { migration003 } from './003_add_rich_text';
 
 export interface Migration {
   version: number;
@@ -11,7 +12,7 @@ export interface Migration {
   down?: (db: SQLiteDatabase) => Promise<void>;
 }
 
-export const MIGRATIONS: Migration[] = [migration001, migration002];
+export const MIGRATIONS: Migration[] = [migration001, migration002, migration003];
 
 async function executeMigrationTransaction(
   db: SQLiteDatabase,

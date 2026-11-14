@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { useThoughts } from '@/hooks/useThoughts';
 import { ThoughtCard } from '@/components/ThoughtCard';
 import { CategoryPicker } from '@/components/CategoryPicker';
@@ -20,6 +20,7 @@ import { Thought } from '@/types/thought';
 import { Icon } from '@/components/Icon';
 
 export default function JournalScreen() {
+  const { theme } = useTheme();
   const { groupedThoughts, isRefreshing, refresh, deleteThought } = useThoughts();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState<Thought[]>([]);
@@ -85,22 +86,32 @@ export default function JournalScreen() {
     : searchResults;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
       <View style={styles.container}>
         {/* Screen Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Journal</Text>
-          <Text style={styles.headerSubtitle}>A chronological record of your mind</Text>
+        <View style={[styles.header, { borderBottomColor: theme.colors.borderLight }]}>
+          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>Journal</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
+            A chronological record of your mind
+          </Text>
 
           {/* Search Bar */}
-          <View style={styles.searchBar}>
+          <View
+            style={[
+              styles.searchBar,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
             <Icon name="search" size={18} color={theme.colors.textMuted} style={styles.searchIcon} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search thoughts, ideas, memories..."
               placeholderTextColor={theme.colors.textPlaceholder}
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.colors.textPrimary }]}
               clearButtonMode="while-editing"
               returnKeyType="search"
             />
@@ -128,7 +139,7 @@ export default function JournalScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             ListHeaderComponent={
-              <Text style={styles.resultSummary}>
+              <Text style={[styles.resultSummary, { color: theme.colors.textMuted }]}>
                 {filteredSearchResults.length} {filteredSearchResults.length === 1 ? 'result' : 'results'} for &ldquo;{searchQuery}&rdquo;
                 {activeCategory ? ` in ${activeCategory}` : ''}
               </Text>
@@ -171,9 +182,9 @@ export default function JournalScreen() {
             }
             renderItem={({ item: group }) => (
               <View style={styles.groupSection}>
-                <View style={styles.groupHeader}>
-                  <Text style={styles.groupTitle}>{group.displayDate}</Text>
-                  <Text style={styles.groupCount}>
+                <View style={[styles.groupHeader, { borderBottomColor: theme.colors.borderLight }]}>
+                  <Text style={[styles.groupTitle, { color: theme.colors.textPrimary }]}>{group.displayDate}</Text>
+                  <Text style={[styles.groupCount, { color: theme.colors.textMuted }]}>
                     {group.thoughts.length} {group.thoughts.length === 1 ? 'thought' : 'thoughts'}
                   </Text>
                 </View>
@@ -197,79 +208,68 @@ export default function JournalScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
   },
   headerTitle: {
-    fontSize: theme.typography.sizes.display,
+    fontSize: 32,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   headerSubtitle: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
+    fontSize: 13,
+    marginBottom: 12,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.lg,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: theme.spacing.xs,
+    marginBottom: 4,
   },
   searchIcon: {
-    marginRight: theme.spacing.sm,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.textPrimary,
+    fontSize: 15,
     paddingVertical: 2,
   },
   resultSummary: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.md,
+    fontSize: 11,
+    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   listContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   groupSection: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 24,
   },
   groupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
     paddingBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
   },
   groupTitle: {
-    fontSize: theme.typography.sizes.bodyLarge,
+    fontSize: 17,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   groupCount: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textMuted,
+    fontSize: 11,
   },
 });

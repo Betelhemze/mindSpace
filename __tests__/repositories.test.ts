@@ -22,16 +22,25 @@ class MockSQLiteDatabase {
     this.executedQueries.push({ sql, params });
 
     if (sql.includes('INSERT INTO thoughts')) {
-      const [id, content, category, created_at, updated_at] = params;
-      this.tables.thoughts.push({ id, content, category: category ?? null, created_at, updated_at, deleted_at: null });
+      const [id, content, rich_content, category, created_at, updated_at] = params;
+      this.tables.thoughts.push({
+        id,
+        content,
+        rich_content: rich_content ?? null,
+        category: category ?? null,
+        created_at,
+        updated_at,
+        deleted_at: null,
+      });
       return { changes: 1, lastInsertRowId: 1 };
     }
 
     if (sql.includes('UPDATE thoughts') && sql.includes('SET content = ?')) {
-      const [content, category, updated_at, id] = params;
+      const [content, rich_content, category, updated_at, id] = params;
       const t = this.tables.thoughts.find((item) => item.id === id);
       if (t) {
         t.content = content;
+        t.rich_content = rich_content ?? null;
         t.category = category ?? null;
         t.updated_at = updated_at;
         return { changes: 1, lastInsertRowId: 1 };
@@ -68,12 +77,24 @@ class MockSQLiteDatabase {
     }
 
     if (sql.includes('INSERT INTO drafts')) {
-      const [id, content, created_at, updated_at] = params;
+      const [id, content, rich_content, created_at, updated_at] = params;
       const idx = this.tables.drafts.findIndex((d) => d.id === id);
       if (idx >= 0) {
-        this.tables.drafts[idx] = { id, content, created_at: this.tables.drafts[idx].created_at, updated_at };
+        this.tables.drafts[idx] = {
+          id,
+          content,
+          rich_content: rich_content ?? null,
+          created_at: this.tables.drafts[idx].created_at,
+          updated_at,
+        };
       } else {
-        this.tables.drafts.push({ id, content, created_at, updated_at });
+        this.tables.drafts.push({
+          id,
+          content,
+          rich_content: rich_content ?? null,
+          created_at,
+          updated_at,
+        });
       }
       return { changes: 1, lastInsertRowId: 1 };
     }

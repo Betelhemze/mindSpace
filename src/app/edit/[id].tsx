@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, ActivityIndicator, View, Text, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { WritingEditor } from '@/components/WritingEditor';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { useThoughts } from '@/hooks/useThoughts';
 import { getRepositories } from '@/database';
 
 export default function EditScreen() {
+  const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { updateThought } = useThoughts();
 
   const [content, setContent] = useState<string>('');
+  const [richContent, setRichContent] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -26,6 +28,7 @@ export default function EditScreen() {
         const item = await repos.thoughts.getById(id);
         if (item) {
           setContent(item.content);
+          setRichContent(item.rich_content ?? null);
           setCategory(item.category ?? null);
         } else {
           setError('Journal entry not found.');
@@ -44,7 +47,7 @@ export default function EditScreen() {
 
     setIsSaving(true);
     try {
-      await updateThought(id, content, category);
+      await updateThought(id, content, category, richContent);
       router.back();
     } catch (err: any) {
       Alert.alert('Update error', err?.message || 'Could not update thought.');
@@ -59,7 +62,7 @@ export default function EditScreen() {
 
   if (initialLoading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.accent} />
       </View>
     );
@@ -67,18 +70,23 @@ export default function EditScreen() {
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={[styles.centerContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.errorText, { color: theme.colors.statusError }]}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
       <WritingEditor
         content={content}
+        richContent={richContent}
         status="saved"
-        onChangeText={setContent}
+        onChangeContent={(plain, rich) => {
+          setContent(plain);
+          setRichContent(rich);
+        }}
+        onChangeText={(plain) => setContent(plain)}
         onSave={handleSave}
         onCancel={handleCancel}
         isSaving={isSaving}
@@ -86,8 +94,8 @@ export default function EditScreen() {
         placeholder="Edit your thought..."
         autoFocus={false}
         footer={
-          <View style={styles.footerWrapper}>
-            <Text style={styles.footerLabel}>Category</Text>
+          <View style={[styles.footerWrapper, { borderTopColor: theme.colors.borderLight }]}>
+            <Text style={[styles.footerLabel, { color: theme.colors.textMuted }]}>Category</Text>
             <CategoryPicker
               selected={category}
               onSelect={setCategory}
@@ -103,31 +111,26 @@ export default function EditScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: 24,
   },
   errorText: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.statusError,
+    fontSize: 15,
   },
   footerWrapper: {
     borderTopWidth: 1,
-    borderTopColor: theme.colors.borderLight,
-    paddingTop: theme.spacing.sm,
+    paddingTop: 8,
   },
   footerLabel: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textMuted,
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: 16,
     marginBottom: 2,
   },
 });

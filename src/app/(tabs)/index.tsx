@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { useThoughts } from '@/hooks/useThoughts';
 import { useDraft } from '@/hooks/useDraft';
 import { ThoughtCard } from '@/components/ThoughtCard';
@@ -18,6 +18,7 @@ import { formatFullLocalDate } from '@/utils/dateUtils';
 import { Icon } from '@/components/Icon';
 
 export default function HomeScreen() {
+  const { theme } = useTheme();
   const { thoughts, todayCount, totalCount, isRefreshing, refresh, deleteThought } = useThoughts();
   const { content: draftContent, isLoaded: draftLoaded } = useDraft();
 
@@ -38,7 +39,7 @@ export default function HomeScreen() {
   const recentThoughts = thoughts.slice(0, 4);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -51,13 +52,18 @@ export default function HomeScreen() {
       >
         {/* Header Greeting */}
         <View style={styles.header}>
-          <Text style={styles.dateText}>{formatFullLocalDate(new Date())}</Text>
-          <Text style={styles.greetingText}>{getGreeting()}</Text>
+          <Text style={[styles.dateText, { color: theme.colors.textMuted }]}>{formatFullLocalDate(new Date())}</Text>
+          <Text style={[styles.greetingText, { color: theme.colors.textPrimary }]}>{getGreeting()}</Text>
 
           {/* Today's thought counter pill */}
-          <View style={styles.todayPill}>
+          <View
+            style={[
+              styles.todayPill,
+              { backgroundColor: theme.colors.surfaceSubtle, borderColor: theme.colors.borderLight },
+            ]}
+          >
             <Icon name="sun" size={14} color={theme.colors.accent} style={styles.pillIcon} />
-            <Text style={styles.todayPillText}>
+            <Text style={[styles.todayPillText, { color: theme.colors.textSecondary }]}>
               {todayCount === 0
                 ? 'No thoughts yet today'
                 : todayCount === 1
@@ -69,40 +75,52 @@ export default function HomeScreen() {
 
         {/* Prominent "Write a Thought" Action Card */}
         <TouchableOpacity
-          style={styles.writeCard}
+          style={[
+            styles.writeCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              ...theme.shadows.card,
+            },
+          ]}
           onPress={() => router.push('/write')}
           activeOpacity={0.88}
         >
           <View style={styles.writeCardTop}>
-            <View style={styles.writeIconCircle}>
+            <View style={[styles.writeIconCircle, { backgroundColor: theme.colors.surfaceSubtle }]}>
               <Icon name="edit-3" size={20} color={theme.colors.accent} />
             </View>
             {hasActiveDraft && (
-              <View style={styles.draftBadge}>
-                <Text style={styles.draftBadgeText}>Unfinished draft</Text>
+              <View
+                style={[
+                  styles.draftBadge,
+                  { backgroundColor: theme.colors.statusDraftBg, borderColor: theme.colors.statusDraft },
+                ]}
+              >
+                <Text style={[styles.draftBadgeText, { color: theme.colors.statusDraft }]}>Unfinished draft</Text>
               </View>
             )}
           </View>
 
-          <Text style={styles.writePromptText}>
+          <Text style={[styles.writePromptText, { color: theme.colors.textPrimary }]}>
             {hasActiveDraft ? 'Continue your unfinished draft...' : "What's on your mind right now?"}
           </Text>
-          <Text style={styles.writeSubPromptText}>
+          <Text style={[styles.writeSubPromptText, { color: theme.colors.textSecondary }]}>
             Tap to record a thought instantly without distractions.
           </Text>
 
           <View style={styles.writeCardFooter}>
-            <Text style={styles.writeActionLabel}>Start writing</Text>
+            <Text style={[styles.writeActionLabel, { color: theme.colors.accent }]}>Start writing</Text>
             <Icon name="arrow-right" size={16} color={theme.colors.accent} />
           </View>
         </TouchableOpacity>
 
         {/* Recent Thoughts Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent thoughts</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Recent thoughts</Text>
           {thoughts.length > 0 && (
             <TouchableOpacity onPress={() => router.push('/(tabs)/journal')}>
-              <Text style={styles.seeAllText}>View all ({totalCount})</Text>
+              <Text style={[styles.seeAllText, { color: theme.colors.accentLight }]}>View all ({totalCount})</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -133,122 +151,104 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   scrollContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
   header: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
   },
   dateText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textMuted,
+    fontSize: 13,
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   greetingText: {
-    fontSize: theme.typography.sizes.display,
+    fontSize: 32,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
   },
   todayPill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceSubtle,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs + 2,
-    borderRadius: theme.radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   pillIcon: {
     marginRight: 6,
   },
   todayPillText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textSecondary,
+    fontSize: 11,
     fontWeight: '600',
   },
   writeCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.xl,
-    padding: theme.spacing.xl,
-    marginBottom: theme.spacing.xl,
+    borderRadius: 22,
+    padding: 24,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadows.card,
   },
   writeCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
   },
   writeIconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: theme.colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   draftBadge: {
-    backgroundColor: theme.colors.statusDraftBg,
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: theme.radii.full,
+    borderRadius: 9999,
     borderWidth: 1,
-    borderColor: theme.colors.statusDraft,
   },
   draftBadgeText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.statusDraft,
+    fontSize: 11,
     fontWeight: '600',
   },
   writePromptText: {
-    fontSize: theme.typography.sizes.title,
+    fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   writeSubPromptText: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.textSecondary,
-    lineHeight: theme.typography.lineHeights.body,
-    marginBottom: theme.spacing.lg,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
   },
   writeCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   writeActionLabel: {
-    fontSize: theme.typography.sizes.body,
+    fontSize: 15,
     fontWeight: '600',
-    color: theme.colors.accent,
     marginRight: 6,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
-    marginTop: theme.spacing.sm,
+    marginBottom: 12,
+    marginTop: 8,
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.title,
+    fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.textPrimary,
   },
   seeAllText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.accentLight,
+    fontSize: 13,
     fontWeight: '600',
   },
 });
